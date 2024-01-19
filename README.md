@@ -11,8 +11,106 @@ Le contenu du projet est disponible ici : https://php.102.picagraine.net/
 
 # Dokuwiki
 
-Pour installer un dokuwiki, il faut d'abord télécharger <a href ="https://download.dokuwiki.org/"> la dernière version </a>.
-Ensuite, 
+Pour installer un dokuwiki, il faut d'abord télécharger <a href ="https://download.dokuwiki.org/"> la dernière version </a> 
+et l'extraire dans le répertoire désiré (ici ```/var/www/doku```)
+**Remarque**: Pour éviter les soucis de permissions pour l'utilisateur on utilise la commande
+```bash
+sudo chown -R www-data:www-data /var/www/dokuwiki ```
+pour les modifier (les permissions du dossier dokuwiki sont donnés à www-data du groupe www-data)
+
+Ensuite, on installe php: ```bash
+sudo apt install php-fpm php-cli php-gd php-xml php-mbstring
+```
+on crée une configuration pour le wiki ```sudo nano /etc/nginx/sites-available/dokuwiki ``` avec le contenu suivant:
+```php
+server {
+        root /var/www/doku;
+        index index.php index.html;
+        server_name wiki.102.picagraine.net;
+
+        location / {
+                try_files $uri $uri/ =404;
+        }
+        location ~ \.php$ {
+                include snippets/fastcgi-php.conf;
+                fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/wiki.102.picagraine.net/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/wiki.102.picagraine.net/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+server {
+    if ($host = wiki.102.picagraine.net) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+        server_name wiki.102.picagraine.net;
+
+        listen 80;
+    return 404; # managed by Certbot
+}
+```
+et on établit un lien symbolique entre ```/etc/nginx/sites-available/dokuwiki``` et ```/etc/nginx/sites-enabled/dokuwiki``` avec la commande:
+```bash
+sudo ln -s /etc/nginx/sites-available/dokuwiki /etc/nginx/sites-enabled/dokuwiki
+```
+
+On crée dans le répertoire courant un document .conf pour dokuwiki avec le contenu suivant:
+
+```php
+daemon off;
+user www-data;
+worker_processes  1;
+
+error_log  stderr error;
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+    access_log stdout;
+
+    server {
+        listen 80;
+
+        root /var/www/html;
+        index index.php index.html index.htm index.nginx-debian.html;
+
+        client_max_body_size 100M;
+        client_body_buffer_size 128k;
+
+        location ~ /\.ht {
+            deny all;
+        }
+
+        location ~ /(data|conf|bin|inc|config|lib)/ {
+            deny all;
+        }
+    }
+}
+```
+
+On redémarre ensuite php et nginx puis on utilise certbox pour avoir un domaine en https:
+```bash
+sudo service php8.2-fpm restart
+sudo certbot 
+sudo systemctl reload nginx
+```
+
+Le site final: https://wiki.102.picagraine.net/doku.php?id=start 
+
 
 # Conduit
 
@@ -94,7 +192,8 @@ server {
     return 404; # managed by Certbot
 }
 ```
-**Remarque** : Il faut s'assurer que le site chat.102.picagraine.net est bien en https, pour cela on peut utiliser certbot
+**Remarque** : Il faut s'assurer que le site chat.102.picagraine.net est bien en https, pour cela on peut utiliser certbot. 
+Il faut également créer un lien symbolique vers ```/etc/nginx/sites-available/chat ``` nommé ```/etc/nginx/sites-enabled/chat```
 
 Dans le répertoire courant, on crée un document ```docker-compose.yml ```
 
@@ -127,3 +226,5 @@ sudo docker run -d --name conduit matrixconduit/matrix-conduit:latest
 Les noms de domaines certifiés par certbot étant limités, le conduit n'est actuellement pas disponible.
 
 # Gestionnaire de mots de passe
+
+
