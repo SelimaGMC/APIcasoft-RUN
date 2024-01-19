@@ -124,6 +124,6 @@ et on lance le conteneur docker avec la commande:
 ```bash
 sudo docker run -d --name conduit matrixconduit/matrix-conduit:latest
 ```
-
+Les noms de domaines certifiés par certbot étant limités, le conduit n'est actuellement pas disponible.
 
 # Gestionnaire de mots de passe
