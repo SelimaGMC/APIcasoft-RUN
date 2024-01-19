@@ -15,10 +15,12 @@ Pour installer un dokuwiki, il faut d'abord télécharger <a href ="https://down
 et l'extraire dans le répertoire désiré (ici ```/var/www/doku```)
 **Remarque**: Pour éviter les soucis de permissions pour l'utilisateur on utilise la commande
 ```bash
-sudo chown -R www-data:www-data /var/www/dokuwiki ```
+sudo chown -R www-data:www-data /var/www/dokuwiki
+```
 pour les modifier (les permissions du dossier dokuwiki sont donnés à www-data du groupe www-data)
 
-Ensuite, on installe php: ```bash
+Ensuite, on installe php: 
+```bash
 sudo apt install php-fpm php-cli php-gd php-xml php-mbstring
 ```
 on crée une configuration pour le wiki ```sudo nano /etc/nginx/sites-available/dokuwiki ``` avec le contenu suivant:
