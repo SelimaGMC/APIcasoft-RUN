@@ -229,4 +229,52 @@ Les noms de domaines certifiés par certbot étant limités, le conduit n'est ac
 
 # Gestionnaire de mots de passe
 
+Pour auto-héberger un gestionnaire de mots de passe Vaultwarden à l'aide de Docker, on commence par importer l'image d'une base de données postgres à l'aide de la commande
+```bash
+docker pull postgres:latest
+```
+puis on crée un conteneur postgres et un conteneur vaultwarden
+```bash
+docker run -d --name postgres-bitwarden -e POSTGRES_DB=bitwarden -e POSTGRES_USER=NomDUtilisateur -e POSTGRES_PASSWORD=MotDePasse --restart unless-stopped postgres:latest
+docker run -d --name vaultwarden -v /vw-data/:/data/ --restart unless-stopped -p 6790:80 vaultwarden/server:latest 
+```
+On crée un document vaultwarden dans ```/etc/nginx/sites-available/``` comme suit: 
+```php
+server {
+    server_name run-h24-02.picagraine.net;
+    location / {
+        proxy_pass http://localhost:6790;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        }
 
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/run-h24-02.picagraine.net/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/run-h24-02.picagraine.net/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+server {
+    if ($host = run-h24-02.picagraine.net) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name run-h24-02.picagraine.net;
+    return 404; # managed by Certbot
+}
+
+```
+et on établit un lien symbolique dans /etc/nginx/sites-enabled/ avec la commande:
+```bash
+sudo ln -s /etc/nginx/sites-available/vaultwarden /etc/nginx/sites-enabled/vaultwarden
+```
+Enfin, on redémarre nginx:
+```bash
+sudo systemctl restart nginx
+```
+et le site final est disponible à l'adresse: https://run-h24-02.picagraine.net/#/login 
