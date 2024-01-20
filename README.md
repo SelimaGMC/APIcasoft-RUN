@@ -277,4 +277,5 @@ Enfin, on redémarre nginx:
 ```bash
 sudo systemctl restart nginx
 ```
-et le site final est disponible à l'adresse: https://run-h24-02.picagraine.net/#/login 
+
+Le site final est disponible à l'adresse: https://run-h24-02.picagraine.net/#/login 
